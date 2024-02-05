@@ -66,11 +66,14 @@ class ConvexHullSolver(QObject):
 
 		t1 = time.time()
 		# TODO: SORT THE POINTS BY INCREASING X-VALUE
+		points.sort(key=lambda p: p.x())
 		t2 = time.time()
 
 		t3 = time.time()
 		# this is a dummy polygon of the first 3 unsorted points
-		polygon = [QLineF(points[i],points[(i+1)%3]) for i in range(3)]
+		# polygon = [QLineF(points[i],points[(i+1)%3]) for i in range(3)]
+		polygon = self.divideAndConquer(points)
+		polygon = [QLineF(points[i],points[(i+1)%len(points)]) for i in range(len(points))]
 		# TODO: REPLACE THE LINE ABOVE WITH A CALL TO YOUR DIVIDE-AND-CONQUER CONVEX HULL SOLVER
 		t4 = time.time()
 
@@ -78,3 +81,19 @@ class ConvexHullSolver(QObject):
 		# object can be created with two QPointF objects corresponding to the endpoints
 		self.showHull(polygon,RED)
 		self.showText('Time Elapsed (Convex Hull): {:3.3f} sec'.format(t4-t3))
+
+
+	def divideAndConquer(self, points):
+		if len(points) <= 3:
+			return [QLineF(points[i],points[(i+1)%len(points)]) for i in range(len(points))]
+		mid = len(points) // 2
+		left = self.divideAndConquer(points[:mid])
+		right = self.divideAndConquer(points[mid:])
+		return self.merge(left, right)
+	
+	def merge(self, left, right):
+		left = self.removeDuplicatePoints(left)
+		right = self.removeDuplicatePoints(right)
+		upper_tangent = self.findUpperTangent(left, right)
+		lower_tangent = self.findLowerTangent(left, right)
+		return upper_tangent + lower_tangent
